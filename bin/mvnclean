@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+# Include the 'Lib' dir in the Load Path
+$LOAD_PATH.unshift(File.dirname(__FILE__) + "/../lib")
+
+require 'mvnclean'
+
+cleaner = MavenClean::Cleaner.new
+cleaner.clean
