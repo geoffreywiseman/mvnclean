@@ -4,8 +4,8 @@ module MavenClean
 
 	class Cleaner
 
-		def initialize()
-			@repo = get_default_repo
+		def initialize( repo )
+			@repo = repo
 			@ignore_folders = [ '.', '..' ]
 			dt = DateTime.now << 6
 			@date_threshold = dt.to_time
@@ -24,11 +24,6 @@ module MavenClean
 		end
 
 		private
-
-		# Get the Default Repository
-		def get_default_repo
-			ENV[ "M2_REPO" ] || File.join( Dir.home, ".m2", "repository" )
-		end   
 
 		# Search for POM files
 		def scan( dirname = nil )

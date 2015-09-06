@@ -7,14 +7,12 @@ A tiny utility to remove older dependencies from your Maven repository.
 `mvnclean [options]`
 
 Where options include:
-- `--dry-run`: *mvnclean* will scan your repository, tell you what it would delete, but not try and do any deletions
-- `--repository=<path>` if you don't want to rely on `M2_REPO` environment variable or the default location
+- `-r <repository path>` if you want to specify this explicitly; otherwise mavenclean will check your M2_REPO environment variable and also the default location in `~/.m2/repository`
+- `-?` to see the help and options
 
-## TODO
-- Option support
-- Ignores (e.g. morena)
-- Gem Packaging
-- Gem Deployment
+## Status
+
+At the moment, this is under development, and as such may not be completely operational. Use at your own risk.
 
 ## Future
 
