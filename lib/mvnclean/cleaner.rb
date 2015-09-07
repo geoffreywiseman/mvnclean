@@ -1,4 +1,5 @@
 require 'time'
+require 'fileutils'
 
 module MavenClean
 
@@ -19,7 +20,19 @@ module MavenClean
 				puts "Dependencies older than #{@threshold_date} from repository #{@repo}:"
 				scan
 				puts
-				puts "Found #{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
+				if @candidates.size == 0 then
+					puts "No candidates found."
+				else
+					puts "Found #{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
+					puts 
+					print "Delete these? [y/N]: "
+					if delete? gets then
+						delete_candidates
+					else
+						puts
+						puts "No deletion performed."
+					end
+				end
 			else
 				puts "Can't find repo: #{@repo}"
 			end
@@ -36,7 +49,7 @@ module MavenClean
 					child_rel_path = get_repo_rel_path( dirname, child )
 					scan child_rel_path unless @ignore_folders.include? child
 				else
-					select_candidates( dirname ) if File.extname( child ) == '.pom'
+					select_candidates( dirname ) if File.extname( child ) == '.pom' && ! @candidates.include?( dirname )
 				end
 			end
 		end
@@ -63,9 +76,7 @@ module MavenClean
 		def select_candidates( folder )
 			mru = get_mru( folder )
 			if mru < @threshold_time then
-				if ignore? folder then
-					puts "- #{folder} (IGNORED)"
-				else
+				if !ignore? folder then
 					@candidates << folder
 					fs = folder_size( folder )
 					@candidates_size += fs
@@ -113,6 +124,21 @@ module MavenClean
 			end
 
 			"~#{magnitude}#{unit}"
+		end
+
+		# Was the user's response a 'delete'?
+		def delete?( response )
+			[ 'y', 'yes', 'true' ].include? response.strip.downcase
+		end
+
+		# Delete the candidates
+		def delete_candidates
+			puts "Deleting #{@candidates.size} candidates."
+			@candidates.each do |dir|
+				FileUtils.remove_entry_secure get_repo_abs_path( dir )
+			end
+			puts
+			puts "Deletion complete."
 		end
 
 	end
