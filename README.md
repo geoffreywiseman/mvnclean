@@ -14,7 +14,7 @@ Where options include:
 
 ## Status
 
-At the moment, this is under development, and as such may not be completely operational. Use at your own risk.
+This is basically operational, but I'd like to clean it up a little before turning it into a Ruby gem for others to consume. If you'd like me to hurry up, [drop me a line](http://www.geoffreywiseman.ca/contact/).
 
 ## Future
 
