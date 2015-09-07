@@ -4,19 +4,20 @@ module MavenClean
 
 	class Cleaner
 
-		def initialize( repo )
+		def initialize( repo, threshold_date )
 			@repo = repo
 			@ignore_folders = [ '.', '..' ]
-			dt = DateTime.now << 6
-			@date_threshold = dt.to_time
+			@threshold_date = threshold_date
+			@threshold_time = threshold_date.to_time
 			@candidates = []
 			@candidates_size = 0
 		end
 
 		def clean()
 			if( File.exist?( @repo ) )
-				puts "Cleaning dependencies older than #{@date_threshold} from repository #{@repo}..."
+				puts "Dependencies older than #{@threshold_date} from repository #{@repo}:"
 				scan
+				puts
 				puts "Found #{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
 			else
 				puts "Can't find repo: #{@repo}"
@@ -58,7 +59,7 @@ module MavenClean
 		# Consider a Project (as identified by its POM) for Deletion
 		def select_candidates( folder )
 			mru = get_mru( folder )
-			if mru < @date_threshold then
+			if mru < @threshold_time then
 				@candidates << folder
 				fs = folder_size( folder )
 				@candidates_size += fs
@@ -66,6 +67,7 @@ module MavenClean
 			end
 		end
 
+		# Calculate the size of a folder (the sum of the files it contains)
 		def folder_size( dirname )
 			path = get_repo_abs_path( dirname )
 			paths = Dir.entries( path ).map { |f| File.join path, f }
