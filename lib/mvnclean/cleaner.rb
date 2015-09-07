@@ -4,13 +4,14 @@ module MavenClean
 
 	class Cleaner
 
-		def initialize( repo, threshold_date )
+		def initialize( repo, threshold_date, ignore_pattern )
 			@repo = repo
 			@ignore_folders = [ '.', '..' ]
 			@threshold_date = threshold_date
 			@threshold_time = threshold_date.to_time
 			@candidates = []
 			@candidates_size = 0
+			@ignore_pattern = ignore_pattern
 		end
 
 		def clean()
@@ -40,6 +41,7 @@ module MavenClean
 			end
 		end
 
+		# Get the absolute path of a directory within the repo
 		def get_repo_abs_path( dirname )
 			if dirname == nil then
 				@repo
@@ -48,6 +50,7 @@ module MavenClean
 			end
 		end
 
+		# Get the repo-relative path of a child-directory given its parent (basically a null-safe file.join)
 		def get_repo_rel_path( dirname, child )
 			if dirname == nil then
 				child
@@ -60,11 +63,19 @@ module MavenClean
 		def select_candidates( folder )
 			mru = get_mru( folder )
 			if mru < @threshold_time then
-				@candidates << folder
-				fs = folder_size( folder )
-				@candidates_size += fs
-				puts "- #{folder} (#{approx_size(fs)})"
+				if ignore? folder then
+					puts "- #{folder} (IGNORED)"
+				else
+					@candidates << folder
+					fs = folder_size( folder )
+					@candidates_size += fs
+					puts "- #{folder} (#{approx_size(fs)})"
+				end
 			end
+		end
+
+		def ignore?( folder )
+			folder =~ @ignore_pattern
 		end
 
 		# Calculate the size of a folder (the sum of the files it contains)
@@ -90,6 +101,7 @@ module MavenClean
 			return mru
 		end
 
+		# Get the human-readable version of a size in bytes
 		def approx_size( size )
 			units = ['PB', 'TB', 'GB', 'MB', 'KB', 'B']
 			magnitude = size

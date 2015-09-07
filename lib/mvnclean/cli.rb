@@ -13,6 +13,18 @@ module MavenClean
 					"dependency must be in order to be removed.") do |m|
 					@options[:months]=m
 				end
+				opts.on( "-i PATTERN", "--ignore PATTERN", 
+					"A regular expression describing dependencies to ignore (e.g. not ",
+					"consider for deletion)." ) do |p|
+					begin
+						@options[:ignore]=Regexp.new(p)
+					rescue
+						puts "Invalid pattern: /#{p}/"
+						puts
+						puts opts
+						exit
+					end
+				end
 				opts.on_tail( "-?", "--help", "Displays this help message." ) do
 					puts opts
 					exit
@@ -45,9 +57,10 @@ module MavenClean
 			puts "MavenClean"
 			puts "  repo: #{@options[:repo]}" 
 			puts "  months: #{@options[:months]}"
+			puts "  ignore: #{@options[:ignore].inspect}" unless @options[:ignore] == nil
 			puts
 			threshold_date = ( Date.today << @options[:months] )
-			Cleaner.new( @options[:repo], threshold_date ).clean
+			Cleaner.new( @options[:repo], threshold_date, @options[:ignore] ).clean
 		end
 
 		# Private Methods 
