@@ -8,6 +8,8 @@ A tiny utility to remove older dependencies from your Maven repository.
 
 Where options include:
 - `-r <repository path>` if you want to specify this explicitly; otherwise mavenclean will check your M2_REPO environment variable and also the default location in `~/.m2/repository`
+- `-m <months>` to specify how recently-accessed a file has to be in order to be retained
+- `i <pattern>` to ignore specific patterns if you have items that you don't want to delete even though they haven't been accessed recently
 - `-?` to see the help and options
 
 ## Status
