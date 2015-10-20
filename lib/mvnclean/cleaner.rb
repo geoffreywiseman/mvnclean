@@ -5,24 +5,25 @@ module MavenClean
 
 	class Cleaner
 
-		def initialize( repo, threshold_date, ignore_pattern )
+		def initialize( repo, threshold_date, ignore_pattern, verbosity )
 			@repo = repo
 			@ignore_folders = [ '.', '..' ]
 			@threshold_date = threshold_date
-			@threshold_time = threshold_date.to_time
 			@candidates = []
 			@candidates_size = 0
 			@ignore_pattern = ignore_pattern
+			@verbosity = verbosity
 		end
 
 		def clean()
 			if( File.exist?( @repo ) )
-				puts "Dependencies older than #{@threshold_date} from repository #{@repo}:"
-				scan
+				candidate_descriptions = scan
 				puts
 				if @candidates.size == 0 then
-					puts "No candidates found."
+					puts "No candidates found older than #{@threshold_date} from repository #{@repo}."
 				else
+					puts "Dependencies older than #{@threshold_date} from repository #{@repo}:"
+					puts candidate_descriptions
 					puts "Found #{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
 					puts 
 					print "Delete these? [y/N]: "
@@ -42,16 +43,18 @@ module MavenClean
 
 		# Search for POM files
 		def scan( dirname = nil )
+			descriptions = []
 			dir_path = get_repo_abs_path( dirname )
 			Dir.foreach( dir_path ) do |child|
 				child_abs_path = File.join( dir_path, child )
 				if File.directory?( child_abs_path ) then
 					child_rel_path = get_repo_rel_path( dirname, child )
-					scan child_rel_path unless @ignore_folders.include? child
+					descriptions += scan child_rel_path unless @ignore_folders.include? child
 				else
-					select_candidates( dirname ) if File.extname( child ) == '.pom' && ! @candidates.include?( dirname )
+					descriptions << select_candidates( dirname ) if File.extname( child ) == '.pom' && ! @candidates.include?( dirname )
 				end
 			end
+			descriptions.compact
 		end
 
 		# Get the absolute path of a directory within the repo
@@ -75,12 +78,12 @@ module MavenClean
 		# Consider a Project (as identified by its POM) for Deletion
 		def select_candidates( folder )
 			mru = get_mru( folder )
-			if mru < @threshold_time then
+			if mru < @threshold_date then
 				if !ignore? folder then
 					@candidates << folder
 					fs = folder_size( folder )
 					@candidates_size += fs
-					puts "- #{folder} (#{approx_size(fs)})"
+					"- #{folder} (#{approx_size(fs)}; accessed: #{mru})"
 				end
 			end
 		end
@@ -96,20 +99,23 @@ module MavenClean
 			files = paths.select{ |x| File.file? x }
 			sizes = files.map{ |x| File.size( x ) }
 			sizes.reduce :+
-		end
+		end#
 
 		# Get the access time of the most recently used file within the directory.
 		def get_mru( dirname )
 			mru = nil
 			dir_path = File.join( @repo, dirname )
+			puts "Calculating access time for #{dirname} using the files therein:" if verbose?
 			Dir.foreach( dir_path ) do |child|
 				child_path = File.join( dir_path, child )
 				if File.file? child_path then
 					atime = File.atime( child_path )
+					puts( "\tAccess time for file #{child}: #{atime}") if verbose?
 					mru = atime if mru == nil || atime > mru
 				end
 			end
-			return mru
+			puts "Access time for folder #{dirname} calculated as: #{mru}" if verbose?
+			return mru.to_date
 		end
 
 		# Get the human-readable version of a size in bytes
@@ -139,6 +145,10 @@ module MavenClean
 			end
 			puts
 			puts "Deletion complete."
+		end
+
+		def verbose?
+			@verbosity == :verbose
 		end
 
 	end

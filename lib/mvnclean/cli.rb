@@ -25,6 +25,10 @@ module MavenClean
 						exit
 					end
 				end
+				opts.on( "-v", "--verbose",
+					"Print more verbose information that could be used to diagnose surprising candidates." ) do
+					@options[:verbosity]=:verbose
+				end
 				opts.on_tail( "-?", "--help", "Displays this help message." ) do
 					puts opts
 					exit
@@ -35,6 +39,7 @@ module MavenClean
 		def parse_config
 			@parser.parse!
 			@options[:repo] ||= get_default_repo
+			@options[:verbosity] ||= :normal
 		end
 
 		def config_valid?
@@ -58,9 +63,10 @@ module MavenClean
 			puts "  repo: #{@options[:repo]}" 
 			puts "  months: #{@options[:months]}"
 			puts "  ignore: #{@options[:ignore].inspect}" unless @options[:ignore] == nil
+			puts "  verbosity: #{@options[:verbosity].to_s}"
 			puts
 			threshold_date = ( Date.today << @options[:months] )
-			Cleaner.new( @options[:repo], threshold_date, @options[:ignore] ).clean
+			Cleaner.new( @options[:repo], threshold_date, @options[:ignore], @options[:verbosity] ).clean
 		end
 
 		# Private Methods 
