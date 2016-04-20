@@ -10,6 +10,7 @@ Where options include:
 - `-r <repository path>` if you want to specify this explicitly; otherwise mavenclean will check your M2_REPO environment variable and also the default location in `~/.m2/repository`
 - `-m <months>` to specify how recently-accessed a file has to be in order to be retained
 - `i <pattern>` to ignore specific patterns if you have items that you don't want to delete even though they haven't been accessed recently
+- `--prune` to remove empty folders, or folders tha will become empty after their children are removed
 - `-?` to see the help and options
 
 ## Status
@@ -20,5 +21,6 @@ This is basically operational, but I'd like to clean it up a little before turni
 
 Some avenues for future enhancements:
 - Might be useful to have different thresholds for how old you want your dependencies to be allowed to be.
+- Also may consider alternate selection criteria (e.g. #11, which requests retaining only the latest non-snapshot version of dependencies)
 - Could have a prompt before deleting, and then an option for non-interactive invocation.
 
