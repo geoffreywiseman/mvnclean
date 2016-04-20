@@ -5,26 +5,28 @@ module MavenClean
 
 	class Cleaner
 
-		def initialize( repo, threshold_date, ignore_pattern, verbosity )
+		def initialize( repo, threshold_date, ignore_pattern, verbosity, prune )
 			@repo = repo
 			@ignore_folders = [ '.', '..' ]
 			@threshold_date = threshold_date
 			@candidates = []
 			@candidates_size = 0
+			@candidates_descriptions = []
 			@ignore_pattern = ignore_pattern
 			@verbosity = verbosity
+			@prune = prune
 		end
 
 		def clean()
 			if( File.exist?( @repo ) )
-				candidate_descriptions = scan
+				scan
 				puts
 				if @candidates.size == 0 then
-					puts "No candidates found older than #{@threshold_date} from repository #{@repo}."
+					puts "No candidates found matching criteria in repository #{@repo}."
 				else
-					puts "Dependencies older than #{@threshold_date} from repository #{@repo}:"
-					puts candidate_descriptions
-					puts "Found #{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
+					puts "Found candidates matching deletion criteria in repository #{@repo}:"
+					puts @candidates_descriptions
+					puts "#{@candidates.size} candidates totalling #{approx_size(@candidates_size)}"
 					puts 
 					print "Delete these? [y/N]: "
 					if delete? gets then
@@ -41,20 +43,39 @@ module MavenClean
 
 		private
 
-		# Search for POM files
+		# Search folder tree for candidates
 		def scan( dirname = nil )
-			descriptions = []
 			dir_path = get_repo_abs_path( dirname )
-			Dir.foreach( dir_path ) do |child|
-				child_abs_path = File.join( dir_path, child )
-				if File.directory?( child_abs_path ) then
-					child_rel_path = get_repo_rel_path( dirname, child )
-					descriptions += scan child_rel_path unless @ignore_folders.include? child
-				else
-					descriptions << select_candidates( dirname ) if File.extname( child ) == '.pom' && ! @candidates.include?( dirname )
+			entries = Dir.entries( dir_path ) - @ignore_folders
+			if entries.empty? then
+				if prune_empty?(dirname) then
+					@candidates << dirname
+					@candidates_descriptions << "#{dirname} (empty folder)"
+				end
+			else
+				candidate_children = 0
+				entries.each do |child|
+					child_abs_path = File.join( dir_path, child )
+					if File.directory?( child_abs_path ) then
+						child_rel_path = get_repo_rel_path( dirname, child )
+						if !ignore?(child) then
+							candidate_children += 1 if scan child_rel_path
+						end
+					else
+						select_candidate( dirname ) if File.extname( child ) == '.pom' && ! @candidates.include?( dirname )
+					end
+				end
+				if candidate_children == entries.size && prune_empty?(dirname) then
+					@candidates << dirname
+					@candidates_descriptions << "#{dirname} (empty after children removed)"
 				end
 			end
-			descriptions.compact
+			@candidates.include?(dirname)
+		end
+
+		# Should an empty directory be pruned?
+		def prune_empty?( dirname )
+			@prune && dirname != nil && ! @candidates.include?( dirname ) && !ignore?( dirname )
 		end
 
 		# Get the absolute path of a directory within the repo
@@ -76,7 +97,7 @@ module MavenClean
 		end
 
 		# Consider a Project (as identified by its POM) for Deletion
-		def select_candidates( folder )
+		def select_candidate( folder )
 			mru = get_mru( folder )
 			if mru < @threshold_date then
 				if !ignore? folder then
@@ -89,7 +110,7 @@ module MavenClean
 		end
 
 		def ignore?( folder )
-			folder =~ @ignore_pattern
+			folder.start_with?( "." ) || folder =~ @ignore_pattern
 		end
 
 		# Calculate the size of a folder (the sum of the files it contains)

@@ -4,7 +4,7 @@ require 'optparse'
 module MavenClean
 	class CommandLineInterface
 		def initialize()
-			@options = {repo: get_default_repo, months:6}
+			@options = {repo:get_default_repo, months: 6, prune: false}
 			@parser = OptionParser.new do |opts|
 				opts.banner = "USAGE: mavenclean [options]"
 				opts.on( "-r REPO", "--repo REPO", "Specifies the repository folder." ) { |repo| @options[:repo] = repo }
@@ -13,6 +13,7 @@ module MavenClean
 					"dependency must be in order to be removed.") do |m|
 					@options[:months]=m
 				end
+				opts.on( "-p", "--prune", "Prune empty folders from within the repository." ) { @options[:prune] = true }
 				opts.on( "-i PATTERN", "--ignore PATTERN", 
 					"A regular expression describing dependencies to ignore (e.g. not ",
 					"consider for deletion)." ) do |p|
@@ -63,10 +64,11 @@ module MavenClean
 			puts "  repo: #{@options[:repo]}" 
 			puts "  months: #{@options[:months]}"
 			puts "  ignore: #{@options[:ignore].inspect}" unless @options[:ignore] == nil
+			puts "  prune empty folders: #{@options[:prune]}"
 			puts "  verbosity: #{@options[:verbosity].to_s}"
 			puts
 			threshold_date = ( Date.today << @options[:months] )
-			Cleaner.new( @options[:repo], threshold_date, @options[:ignore], @options[:verbosity] ).clean
+			Cleaner.new( @options[:repo], threshold_date, @options[:ignore], @options[:verbosity], @options[:prune] ).clean
 		end
 
 		# Private Methods 
